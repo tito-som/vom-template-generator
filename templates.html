@@ -51,11 +51,18 @@
 
         .vendors-section { margin-top: 20px; border-top: 1px solid #2a2a4a; padding-top: 20px; }
         .vendors-section h3 { font-size: 1rem; color: #4facfe; margin-bottom: 12px; }
-        .vendor-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 10px; }
+        .vendor-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 12px; align-items: end; margin-bottom: 10px; }
         .btn-remove { padding: 10px 14px; background: #e74c3c; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 1rem; }
         .btn-remove:hover { background: #c0392b; }
         .btn-add { padding: 10px 20px; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; border-radius: 8px; color: #fff; font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 10px; }
         .btn-update { width: 100%; margin-top: 20px; padding: 14px; background: linear-gradient(135deg, #4facfe, #00f2fe); border: none; border-radius: 8px; color: #1a1a2e; font-weight: 700; font-size: 1rem; cursor: pointer; }
+
+        /* Color picker inline */
+        .color-picker-wrap { display:inline-flex; align-items:center; gap:6px; margin-left:10px; vertical-align:middle; }
+        .color-picker-wrap input[type="color"] { width:28px; height:28px; border:1px solid #444; border-radius:6px; background:none; cursor:pointer; padding:1px; }
+        .color-picker-wrap input[type="color"]:disabled { opacity:0.3; cursor:default; }
+        .color-picker-wrap label { font-size:0.7rem; color:#888; cursor:pointer; user-select:none; display:flex; align-items:center; gap:4px; }
+        .color-picker-wrap input[type="checkbox"] { accent-color:#4facfe; }
 
         /* Grid */
         .templates-grid {
@@ -98,7 +105,7 @@
                 </select>
             </div>
             <div class="control-group">
-                <label>Discount</label>
+                <label>Discount <span class="color-picker-wrap"><input type="checkbox" id="priceColorOn" onchange="document.getElementById('priceColor').disabled=!this.checked;render();"><label for="priceColorOn">Color</label><input type="color" id="priceColor" value="#ffffff" disabled onchange="render()"></span></label>
                 <input type="text" id="promoPrice" value="20% OFF" placeholder="e.g. 15% OFF">
             </div>
             <div class="control-group" style="grid-column: 1 / -1;">
@@ -143,11 +150,11 @@
                 </select>
             </div>
             <div class="control-group" style="grid-column: 1 / -1;">
-                <label>Deal Description</label>
+                <label>Deal Description <span class="color-picker-wrap"><input type="checkbox" id="dealColorOn" onchange="document.getElementById('dealColor').disabled=!this.checked;render();"><label for="dealColorOn">Color</label><input type="color" id="dealColor" value="#333333" disabled onchange="render()"></span></label>
                 <input type="text" id="dealDesc" value="Fresh organic produce boxes — locally grown, hand-picked daily" placeholder="Describe the deal">
             </div>
             <div class="control-group" style="grid-column: 1 / -1;">
-                <label>Notes <span style="opacity:0.5;font-weight:400;">(optional — appears under discount, max 300 chars)</span></label>
+                <label>Notes <span style="opacity:0.5;font-weight:400;">(optional, max 300)</span> <span class="color-picker-wrap"><input type="checkbox" id="notesColorOn" onchange="document.getElementById('notesColor').disabled=!this.checked;render();"><label for="notesColorOn">Color</label><input type="color" id="notesColor" value="#888888" disabled onchange="render()"></span></label>
                 <input type="text" id="notesField" value="" placeholder="e.g. Valid while supplies last. One per customer." maxlength="300">
                 <div style="text-align:right;margin-top:4px;"><span id="notesCount" style="font-size:0.7rem;color:#666;">0 / 300</span></div>
             </div>
@@ -170,6 +177,7 @@
                     <div class="control-group"><label>Vendor Name</label><input type="text" class="vendor-name-input" value="Spring Valley Farms" placeholder="Vendor name"></div>
                     <div class="control-group"><label>Vendor Deal (optional)</label><input type="text" class="vendor-deal-input" value="Organic Produce" placeholder="Their specialty"></div>
                     <div class="control-group"><label>Vendor Font</label><select class="vendor-font-input"><option value="">Auto</option></select></div>
+                    <div class="control-group"><label>Color</label><div style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="vendor-color-on" onchange="this.parentElement.querySelector('.vendor-color-input').disabled=!this.checked;render();"><input type="color" class="vendor-color-input" value="#333333" disabled onchange="render()"></div></div>
                     <button class="btn-remove" onclick="removeVendor(this)">✕</button>
                 </div>
             </div>
@@ -245,10 +253,20 @@ const templateNames = [
 // ===== RENDER =====
 function render() {
     const month = document.getElementById('monthName').value;
-    const price = document.getElementById('promoPrice').value || '% OFF';
-    const dealText = document.getElementById('dealDesc').value || 'Deal description here';
+    const priceRaw = document.getElementById('promoPrice').value || '% OFF';
+    const priceColorOn = document.getElementById('priceColorOn').checked;
+    const priceColorVal = priceColorOn ? document.getElementById('priceColor').value : '';
+    const price = priceColorVal ? `<span style="color:${priceColorVal}">${priceRaw}</span>` : priceRaw;
+
+    const dealRaw = document.getElementById('dealDesc').value || 'Deal description here';
+    const dealColorOn = document.getElementById('dealColorOn').checked;
+    const dealColorVal = dealColorOn ? document.getElementById('dealColor').value : '';
+    const dealText = dealColorVal ? `<span style="color:${dealColorVal}">${dealRaw}</span>` : dealRaw;
+
     const notesRaw = document.getElementById('notesField').value.slice(0, 300);
     document.getElementById('notesCount').textContent = notesRaw.length + ' / 300';
+    const notesColorOn = document.getElementById('notesColorOn').checked;
+    const notesColorVal = notesColorOn ? document.getElementById('notesColor').value : '';
     const vendors = getVendors();
     const t = themeData[month];
 
@@ -267,9 +285,11 @@ function render() {
     const tplFont = document.getElementById('templateFont').value;
 
     const vendorHTML = vendors.map(v => {
-        const fStyle = v.font ? `font-family:${v.font};` : '';
+        let sty = '';
+        if (v.font) sty += `font-family:${v.font};`;
+        if (v.color) sty += `color:${v.color};`;
         const text = v.deal ? `${v.name} <span style="opacity:0.7;">— ${v.deal}</span>` : v.name;
-        return v.font ? `<span style="${fStyle}">${text}</span>` : text;
+        return sty ? `<span style="${sty}">${text}</span>` : text;
     }).join('<br>');
 
     const grid = document.getElementById('templatesGrid');
@@ -279,10 +299,11 @@ function render() {
     const tf = tplFont ? `font-family:${tplFont};` : '';
     const ci = customImageDataURL; // custom image data URL (empty string if none)
     // Notes block — shown under discount if filled out
-    const notesBlock = notesRaw ? `<div style="font-size:0.6rem;color:#888;text-align:center;line-height:1.4;max-width:260px;margin-top:6px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
-    const notesBlockLight = notesRaw ? `<div style="font-size:0.6rem;color:rgba(255,255,255,0.55);text-align:center;line-height:1.4;max-width:260px;margin-top:6px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
-    const notesBlockSm = notesRaw ? `<div style="font-size:0.5rem;color:#888;text-align:center;line-height:1.4;max-width:220px;margin-top:4px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
-    const notesBlockSmLight = notesRaw ? `<div style="font-size:0.5rem;color:rgba(255,255,255,0.5);text-align:center;line-height:1.4;max-width:220px;margin-top:4px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
+    const nc = notesColorVal ? `color:${notesColorVal};` : '';
+    const notesBlock = notesRaw ? `<div style="font-size:0.6rem;${nc || 'color:#888;'}text-align:center;line-height:1.4;max-width:260px;margin-top:6px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
+    const notesBlockLight = notesRaw ? `<div style="font-size:0.6rem;${nc || 'color:rgba(255,255,255,0.55);'}text-align:center;line-height:1.4;max-width:260px;margin-top:6px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
+    const notesBlockSm = notesRaw ? `<div style="font-size:0.5rem;${nc || 'color:#888;'}text-align:center;line-height:1.4;max-width:220px;margin-top:4px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
+    const notesBlockSmLight = notesRaw ? `<div style="font-size:0.5rem;${nc || 'color:rgba(255,255,255,0.5);'}text-align:center;line-height:1.4;max-width:220px;margin-top:4px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
     const disclaimer = 'This product has intoxicating effects and may be habit forming. Marijuana can impair concentration, and judgement. Do not operate a vehicle or machinery under the influence of this drug. There may be health risks associated with consumption of this product. For use by adults 21+ and older. Keep out of reach of children.';
     // Custom image HTML snippets for different template placements
     const ciBlock = ci ? `<img src="${ci}" style="width:140px;height:100px;object-fit:cover;border-radius:8px;margin:8px 0;z-index:2;box-shadow:0 4px 15px rgba(0,0,0,0.15);">` : '';
@@ -1917,6 +1938,7 @@ function addVendor() {
         <div class="control-group"><label>Vendor Name</label><input type="text" class="vendor-name-input" value="" placeholder="Vendor name"></div>
         <div class="control-group"><label>Vendor Deal (optional)</label><input type="text" class="vendor-deal-input" value="" placeholder="Their specialty"></div>
         <div class="control-group"><label>Vendor Font</label><select class="vendor-font-input">${buildFontSelect()}</select></div>
+        <div class="control-group"><label>Color</label><div style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="vendor-color-on" onchange="this.parentElement.querySelector('.vendor-color-input').disabled=!this.checked;render();"><input type="color" class="vendor-color-input" value="#333333" disabled onchange="render()"></div></div>
         <button class="btn-remove" onclick="removeVendor(this)">✕</button>`;
     document.getElementById('vendorRows').appendChild(row);
     row.querySelectorAll('input, select').forEach(i => i.addEventListener('input', render));
@@ -1934,14 +1956,17 @@ function getVendors() {
     const names = document.querySelectorAll('.vendor-name-input');
     const deals = document.querySelectorAll('.vendor-deal-input');
     const fonts = document.querySelectorAll('.vendor-font-input');
+    const colorOns = document.querySelectorAll('.vendor-color-on');
+    const colors = document.querySelectorAll('.vendor-color-input');
     const v = [];
     names.forEach((input, i) => {
         const name = input.value.trim();
         const deal = deals[i] ? deals[i].value.trim() : '';
         const font = fonts[i] ? fonts[i].value : '';
-        if (name) v.push({ name, deal, font });
+        const color = (colorOns[i] && colorOns[i].checked && colors[i]) ? colors[i].value : '';
+        if (name) v.push({ name, deal, font, color });
     });
-    return v.length ? v : [{ name: 'Vendor Name', deal: '', font: '' }];
+    return v.length ? v : [{ name: 'Vendor Name', deal: '', font: '', color: '' }];
 }
 
 function updateTemplates() { render(); }
