@@ -689,6 +689,9 @@ function openPrintView(card, index) {
             height: ${refH}px;
             flex-shrink: 0;
             transform-origin: center center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         /* Saving overlay */
         .save-overlay {
@@ -820,21 +823,19 @@ function openPrintView(card, index) {
 
             if (isLandscape) {
                 /*
-                 * Landscape: keep the inner template at its original portrait
-                 * dimensions so the layout stays intact, then use CSS transform
-                 * to scale it to fill a landscape container.
-                 * scaleX stretches width from REF_W -> REF_H (wider)
-                 * scaleY shrinks height from REF_H -> REF_W (shorter)
+                 * Landscape: keep inner template at original portrait size,
+                 * use uniform scale to fit within landscape container (no distortion).
+                 * The portrait flyer scales down to fit the shorter landscape height,
+                 * and is centered horizontally via flexbox on the wrap.
                  */
-                var sx = REF_H / REF_W;
-                var sy = REF_W / REF_H;
+                var uniformScale = REF_W / REF_H; /* shrink to fit height */
                 wrap.style.width = REF_H + 'px';
                 wrap.style.height = REF_W + 'px';
                 inner.style.width = REF_W + 'px';
                 inner.style.height = REF_H + 'px';
                 inner.style.aspectRatio = '8.5 / 11';
-                inner.style.transform = 'scale(' + sx + ',' + sy + ')';
-                inner.style.transformOrigin = 'top left';
+                inner.style.transform = 'scale(' + uniformScale + ')';
+                inner.style.transformOrigin = 'center center';
             } else {
                 /* Restore portrait */
                 wrap.style.width = REF_W + 'px';
@@ -843,7 +844,7 @@ function openPrintView(card, index) {
                 inner.style.height = REF_H + 'px';
                 inner.style.aspectRatio = IS_SOCIAL ? '1 / 1' : '8.5 / 11';
                 inner.style.transform = 'none';
-                inner.style.transformOrigin = 'top left';
+                inner.style.transformOrigin = 'center center';
             }
         }
 
@@ -882,12 +883,11 @@ function openPrintView(card, index) {
 
             var flyerScale = Math.min(pageW / curW, pageH / curH);
             wrap.style.transform = 'scale(' + flyerScale + ')';
+            wrap.style.transformOrigin = 'center center';
         }
 
         function doPrint() {
             var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
-            var curW = getCurW();
-            var curH = getCurH();
 
             var style = document.createElement('style');
             style.id = 'printPageStyle';
@@ -903,29 +903,29 @@ function openPrintView(card, index) {
             var inner = wrap ? wrap.querySelector(':scope > div') : null;
             var origWrapTransform = wrap.style.transform;
 
-            /* For landscape: temporarily set inner to actual landscape dimensions
-               so browser prints real layout, not a CSS-transformed one */
-            var origInnerTransform, origInnerW, origInnerH, origInnerAR;
-            if (isLandscape && inner) {
-                origInnerTransform = inner.style.transform;
-                origInnerW = inner.style.width;
-                origInnerH = inner.style.height;
-                origInnerAR = inner.style.aspectRatio;
-                inner.style.transform = 'none';
-                inner.style.width = curW + 'px';
-                inner.style.height = curH + 'px';
-                inner.style.aspectRatio = '11 / 8.5';
-            }
-
             /*
-             * Scale to fit within a portrait letter page (816x1056 at 96dpi)
-             * as worst-case fallback if browser ignores @page landscape.
+             * For print: scale the portrait flyer to fill the print page.
+             * For portrait: scale to fit 816x1056 (letter at 96dpi).
+             * For landscape: the inner stays portrait-sized with uniform scale;
+             *   scale the whole wrap so the flyer fills the landscape page height.
              */
-            var safeW = 816;
-            var safeH = 1056;
-            var s = Math.min(safeW / curW, safeH / curH);
-            wrap.style.transform = 'scale(' + s + ')';
-            wrap.style.transformOrigin = 'top left';
+            if (isLandscape) {
+                /* Landscape page: 1056w x 816h at 96dpi. Scale portrait flyer
+                   to fit page height (816px), centered horizontally by flexbox. */
+                var printScale = 816 / REF_H;
+                wrap.style.width = '1056px';
+                wrap.style.height = '816px';
+                wrap.style.transform = 'none';
+                /* Inner stays at portrait size; scale it to fit 816px tall */
+                if (inner) {
+                    inner.style.transform = 'scale(' + printScale + ')';
+                    inner.style.transformOrigin = 'center center';
+                }
+            } else {
+                var s = Math.min(816 / REF_W, 1056 / REF_H);
+                wrap.style.transform = 'scale(' + s + ')';
+                wrap.style.transformOrigin = 'top left';
+            }
 
             window.print();
 
@@ -934,12 +934,7 @@ function openPrintView(card, index) {
                 if (ps) ps.remove();
                 wrap.style.transform = origWrapTransform;
                 wrap.style.transformOrigin = 'center center';
-                if (isLandscape && inner) {
-                    inner.style.transform = origInnerTransform;
-                    inner.style.width = origInnerW;
-                    inner.style.height = origInnerH;
-                    inner.style.aspectRatio = origInnerAR;
-                }
+                applyOrientation();
                 scaleFlyer();
             }, 500);
         }
@@ -955,57 +950,68 @@ function openPrintView(card, index) {
             wrap.style.transform = 'none';
 
             var isLand = currentOrientation === 'landscape' && !IS_SOCIAL;
-            var curW = getCurW();
-            var curH = getCurH();
             var captureScale = 3;
 
-            /* For landscape: temporarily remove inner scale transform and set
-               inner div to actual landscape dimensions so html2canvas captures
-               it correctly (html2canvas doesn't handle CSS scale transforms). */
-            var origInnerTransform, origInnerW, origInnerH, origInnerAR;
+            /*
+             * Always capture the portrait flyer at its native size (REF_W x REF_H).
+             * For landscape: temporarily remove inner scale so html2canvas gets
+             * the clean portrait content, then we composite onto a landscape canvas.
+             */
+            var origInnerTransform;
             if (isLand && inner) {
                 origInnerTransform = inner.style.transform;
-                origInnerW = inner.style.width;
-                origInnerH = inner.style.height;
-                origInnerAR = inner.style.aspectRatio;
                 inner.style.transform = 'none';
-                inner.style.width = curW + 'px';
-                inner.style.height = curH + 'px';
-                inner.style.aspectRatio = '11 / 8.5';
             }
 
             setTimeout(function() {
-                html2canvas(wrap, {
+                html2canvas(inner || wrap, {
                     scale: captureScale,
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: null,
-                    width: curW,
-                    height: curH
-                }).then(function(finalCanvas) {
+                    width: REF_W,
+                    height: REF_H
+                }).then(function(portraitCanvas) {
                     wrap.style.transform = origWrapTransform;
                     if (isLand && inner) {
                         inner.style.transform = origInnerTransform;
-                        inner.style.width = origInnerW;
-                        inner.style.height = origInnerH;
-                        inner.style.aspectRatio = origInnerAR;
                     }
 
-                    var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
                     var fileName = TEMPLATE_NAME.replace(/[^a-zA-Z0-9]/g, '_') + '_' + currentOrientation;
+                    var outputCanvas = portraitCanvas;
+
+                    if (isLand) {
+                        /* Create landscape canvas, draw portrait flyer centered */
+                        var landW = REF_H * captureScale;
+                        var landH = REF_W * captureScale;
+                        var lc = document.createElement('canvas');
+                        lc.width = landW;
+                        lc.height = landH;
+                        var ctx = lc.getContext('2d');
+                        /* Fill with white background */
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, landW, landH);
+                        /* Scale portrait to fit landscape height, center horizontally */
+                        var fitScale = landH / portraitCanvas.height;
+                        var drawW = portraitCanvas.width * fitScale;
+                        var drawH = landH;
+                        var offsetX = (landW - drawW) / 2;
+                        ctx.drawImage(portraitCanvas, offsetX, 0, drawW, drawH);
+                        outputCanvas = lc;
+                    }
 
                     if (fmt === 'pdf') {
                         var jsPDF = window.jspdf.jsPDF;
                         var doc;
                         if (IS_SOCIAL) {
                             doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: [11, 11] });
-                            doc.addImage(finalCanvas.toDataURL('image/png'), 'PNG', 0, 0, 11, 11);
-                        } else if (isLandscape) {
+                            doc.addImage(outputCanvas.toDataURL('image/png'), 'PNG', 0, 0, 11, 11);
+                        } else if (isLand) {
                             doc = new jsPDF({ orientation: 'landscape', unit: 'in', format: 'letter' });
-                            doc.addImage(finalCanvas.toDataURL('image/png'), 'PNG', 0, 0, 11, 8.5);
+                            doc.addImage(outputCanvas.toDataURL('image/png'), 'PNG', 0, 0, 11, 8.5);
                         } else {
                             doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
-                            doc.addImage(finalCanvas.toDataURL('image/png'), 'PNG', 0, 0, 8.5, 11);
+                            doc.addImage(outputCanvas.toDataURL('image/png'), 'PNG', 0, 0, 8.5, 11);
                         }
                         doc.save(fileName + '.pdf');
                     } else {
@@ -1019,7 +1025,7 @@ function openPrintView(card, index) {
                         var mime = mimeTypes[fmt] || 'image/png';
                         var quality = (fmt === 'jpg' || fmt === 'jpeg') ? 0.95 : undefined;
 
-                        finalCanvas.toBlob(function(blob) {
+                        outputCanvas.toBlob(function(blob) {
                             var url = URL.createObjectURL(blob);
                             var a = document.createElement('a');
                             a.href = url;
@@ -1036,9 +1042,6 @@ function openPrintView(card, index) {
                     wrap.style.transform = origWrapTransform;
                     if (isLand && inner) {
                         inner.style.transform = origInnerTransform;
-                        inner.style.width = origInnerW;
-                        inner.style.height = origInnerH;
-                        inner.style.aspectRatio = origInnerAR;
                     }
                     overlay.classList.remove('active');
                     alert('Error generating image: ' + err.message);
