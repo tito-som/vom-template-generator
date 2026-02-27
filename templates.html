@@ -791,7 +791,41 @@ function openPrintView(card, index) {
             currentOrientation = orient;
             document.getElementById('btnPortrait').classList.toggle('active', orient === 'portrait');
             document.getElementById('btnLandscape').classList.toggle('active', orient === 'landscape');
+            applyOrientation();
             scaleFlyer();
+        }
+
+        function applyOrientation() {
+            var wrap = document.querySelector('.flyer-wrap');
+            var inner = wrap ? wrap.querySelector(':scope > div') : null;
+            if (!wrap || !inner) return;
+            var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
+
+            if (isLandscape) {
+                /* Swap flyer-wrap to landscape dimensions */
+                wrap.style.width = REF_H + 'px';
+                wrap.style.height = REF_W + 'px';
+                /* Change the inner flyer's aspect-ratio and size to landscape */
+                inner.style.width = REF_H + 'px';
+                inner.style.height = REF_W + 'px';
+                inner.style.aspectRatio = '11 / 8.5';
+            } else {
+                /* Restore portrait */
+                wrap.style.width = REF_W + 'px';
+                wrap.style.height = REF_H + 'px';
+                inner.style.width = REF_W + 'px';
+                inner.style.height = REF_H + 'px';
+                inner.style.aspectRatio = IS_SOCIAL ? '1 / 1' : '8.5 / 11';
+            }
+        }
+
+        function getCurW() {
+            var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
+            return isLandscape ? REF_H : REF_W;
+        }
+        function getCurH() {
+            var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
+            return isLandscape ? REF_W : REF_H;
         }
 
         function scaleFlyer() {
@@ -803,47 +837,29 @@ function openPrintView(card, index) {
             var toolbarH = toolbar ? toolbar.offsetHeight : 0;
             var availW = window.innerWidth - 40;
             var availH = window.innerHeight - toolbarH - 40;
-            var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
+            var curW = getCurW();
+            var curH = getCurH();
+            var pageRatio = curW / curH;
 
-            if (isLandscape) {
-                /* Page frame is landscape (11:8.5 ratio) */
-                var pageRatio = 11 / 8.5;
-                var pageW, pageH;
-                if (availW / availH > pageRatio) {
-                    pageH = availH;
-                    pageW = pageH * pageRatio;
-                } else {
-                    pageW = availW;
-                    pageH = pageW / pageRatio;
-                }
-                frame.style.width = pageW + 'px';
-                frame.style.height = pageH + 'px';
-
-                /* Scale the flyer to fit inside the landscape page, centered */
-                var flyerScale = Math.min(pageW * 0.9 / REF_W, pageH * 0.9 / REF_H);
-                wrap.style.transform = 'scale(' + flyerScale + ')';
+            var pageW, pageH;
+            if (availW / availH > pageRatio) {
+                pageH = availH;
+                pageW = pageH * pageRatio;
             } else {
-                /* Page frame is portrait (8.5:11 ratio) — same as flyer */
-                var pageRatio = 8.5 / 11;
-                var pageW, pageH;
-                if (availW / availH > pageRatio) {
-                    pageH = availH;
-                    pageW = pageH * pageRatio;
-                } else {
-                    pageW = availW;
-                    pageH = pageW / pageRatio;
-                }
-                frame.style.width = pageW + 'px';
-                frame.style.height = pageH + 'px';
-
-                /* Scale flyer to fill the portrait page */
-                var flyerScale = Math.min(pageW / REF_W, pageH / REF_H);
-                wrap.style.transform = 'scale(' + flyerScale + ')';
+                pageW = availW;
+                pageH = pageW / pageRatio;
             }
+            frame.style.width = pageW + 'px';
+            frame.style.height = pageH + 'px';
+
+            var flyerScale = Math.min(pageW / curW, pageH / curH);
+            wrap.style.transform = 'scale(' + flyerScale + ')';
         }
 
         function doPrint() {
             var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
+            var curW = getCurW();
+            var curH = getCurH();
 
             var style = document.createElement('style');
             style.id = 'printPageStyle';
@@ -855,28 +871,27 @@ function openPrintView(card, index) {
             }
             document.head.appendChild(style);
 
-            /* Temporarily set print-appropriate transforms */
             var frame = document.getElementById('pageFrame');
             var wrap = document.querySelector('.flyer-wrap');
             var origFrameW = frame.style.width;
             var origFrameH = frame.style.height;
             var origWrapTransform = wrap.style.transform;
 
+            var targetW, targetH;
             if (isLandscape) {
-                frame.style.width = '11in';
-                frame.style.height = '8.5in';
-                var sx = (11 * 96) / REF_W;
-                var sy = (8.5 * 96) / REF_H;
-                var s = Math.min(sx, sy) * 0.9;
-                wrap.style.transform = 'scale(' + s + ')';
+                targetW = 11 * 96;
+                targetH = 8.5 * 96;
+            } else if (IS_SOCIAL) {
+                targetW = 1080;
+                targetH = 1080;
             } else {
-                var targetW = IS_SOCIAL ? 1080 : 816;
-                var targetH = IS_SOCIAL ? 1080 : 1056;
-                frame.style.width = (IS_SOCIAL ? '1080px' : '8.5in');
-                frame.style.height = (IS_SOCIAL ? '1080px' : '11in');
-                var s = Math.min(targetW / REF_W, targetH / REF_H);
-                wrap.style.transform = 'scale(' + s + ')';
+                targetW = 816;
+                targetH = 1056;
             }
+            frame.style.width = targetW + 'px';
+            frame.style.height = targetH + 'px';
+            var s = Math.min(targetW / curW, targetH / curH);
+            wrap.style.transform = 'scale(' + s + ')';
 
             window.print();
 
@@ -896,10 +911,11 @@ function openPrintView(card, index) {
             overlay.classList.add('active');
 
             var wrap = document.querySelector('.flyer-wrap');
-            /* Reset transform so html2canvas captures at native size */
             var origTransform = wrap.style.transform;
             wrap.style.transform = 'none';
 
+            var curW = getCurW();
+            var curH = getCurH();
             var captureScale = 3;
 
             setTimeout(function() {
@@ -908,41 +924,12 @@ function openPrintView(card, index) {
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: null,
-                    width: REF_W,
-                    height: REF_H
-                }).then(function(canvas) {
+                    width: curW,
+                    height: curH
+                }).then(function(finalCanvas) {
                     wrap.style.transform = origTransform;
 
                     var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
-                    var finalCanvas;
-
-                    if (isLandscape) {
-                        /*
-                         * Landscape output: create 11:8.5 canvas, center the
-                         * upright flyer on the white landscape page.
-                         */
-                        var landW = Math.round(canvas.height * (11 / 8.5));
-                        var landH = canvas.height;
-                        /* Scale captured flyer to fit with 5% margin */
-                        var sx = (landW * 0.9) / canvas.width;
-                        var sy = (landH * 0.9) / canvas.height;
-                        var s = Math.min(sx, sy);
-                        var drawW = Math.round(canvas.width * s);
-                        var drawH = Math.round(canvas.height * s);
-
-                        finalCanvas = document.createElement('canvas');
-                        finalCanvas.width = landW;
-                        finalCanvas.height = landH;
-                        var ctx = finalCanvas.getContext('2d');
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, landW, landH);
-                        var offX = Math.round((landW - drawW) / 2);
-                        var offY = Math.round((landH - drawH) / 2);
-                        ctx.drawImage(canvas, offX, offY, drawW, drawH);
-                    } else {
-                        finalCanvas = canvas;
-                    }
-
                     var fileName = TEMPLATE_NAME.replace(/[^a-zA-Z0-9]/g, '_') + '_' + currentOrientation;
 
                     if (fmt === 'pdf') {
@@ -985,7 +972,6 @@ function openPrintView(card, index) {
                     overlay.classList.remove('active');
                 }).catch(function(err) {
                     wrap.style.transform = origTransform;
-                    wrap.style.transformOrigin = origOrigin;
                     overlay.classList.remove('active');
                     alert('Error generating image: ' + err.message);
                 });
