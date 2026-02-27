@@ -84,6 +84,16 @@
         .template-card:hover .select-badge { opacity: 1; }
 
         .footer { text-align: center; margin-top: 60px; color: #555; font-size: 0.85rem; }
+
+        @media (max-width: 600px) {
+            .vendor-row {
+                grid-template-columns: 1fr !important;
+                gap: 8px;
+            }
+            .vendor-row .btn-remove {
+                justify-self: start;
+            }
+        }
     </style>
 </head>
 <body>
