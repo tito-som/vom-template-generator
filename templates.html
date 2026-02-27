@@ -147,6 +147,11 @@
                 <input type="text" id="dealDesc" value="Fresh organic produce boxes — locally grown, hand-picked daily" placeholder="Describe the deal">
             </div>
             <div class="control-group" style="grid-column: 1 / -1;">
+                <label>Notes <span style="opacity:0.5;font-weight:400;">(optional — appears under discount, max 300 chars)</span></label>
+                <input type="text" id="notesField" value="" placeholder="e.g. Valid while supplies last. One per customer." maxlength="300">
+                <div style="text-align:right;margin-top:4px;"><span id="notesCount" style="font-size:0.7rem;color:#666;">0 / 300</span></div>
+            </div>
+            <div class="control-group" style="grid-column: 1 / -1;">
                 <label>Custom Image (optional — product photo, promo graphic, etc.)</label>
                 <div style="display:flex;align-items:center;gap:12px;">
                     <input type="file" id="customImage" accept="image/*" onchange="handleImageUpload(this)" style="flex:1;">
@@ -242,6 +247,8 @@ function render() {
     const month = document.getElementById('monthName').value;
     const price = document.getElementById('promoPrice').value || '% OFF';
     const dealText = document.getElementById('dealDesc').value || 'Deal description here';
+    const notesRaw = document.getElementById('notesField').value.slice(0, 300);
+    document.getElementById('notesCount').textContent = notesRaw.length + ' / 300';
     const vendors = getVendors();
     const t = themeData[month];
 
@@ -271,6 +278,11 @@ function render() {
     const logo = logoDataURL || 'green_lady_logo.svg';
     const tf = tplFont ? `font-family:${tplFont};` : '';
     const ci = customImageDataURL; // custom image data URL (empty string if none)
+    // Notes block — shown under discount if filled out
+    const notesBlock = notesRaw ? `<div style="font-size:0.6rem;color:#888;text-align:center;line-height:1.4;max-width:260px;margin-top:6px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
+    const notesBlockLight = notesRaw ? `<div style="font-size:0.6rem;color:rgba(255,255,255,0.55);text-align:center;line-height:1.4;max-width:260px;margin-top:6px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
+    const notesBlockSm = notesRaw ? `<div style="font-size:0.5rem;color:#888;text-align:center;line-height:1.4;max-width:220px;margin-top:4px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
+    const notesBlockSmLight = notesRaw ? `<div style="font-size:0.5rem;color:rgba(255,255,255,0.5);text-align:center;line-height:1.4;max-width:220px;margin-top:4px;z-index:2;font-style:italic;">${notesRaw}</div>` : '';
     const disclaimer = 'This product has intoxicating effects and may be habit forming. Marijuana can impair concentration, and judgement. Do not operate a vehicle or machinery under the influence of this drug. There may be health risks associated with consumption of this product. For use by adults 21+ and older. Keep out of reach of children.';
     // Custom image HTML snippets for different template placements
     const ciBlock = ci ? `<img src="${ci}" style="width:140px;height:100px;object-fit:cover;border-radius:8px;margin:8px 0;z-index:2;box-shadow:0 4px 15px rgba(0,0,0,0.15);">` : '';
@@ -293,6 +305,7 @@ function render() {
             <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:${t.c2};text-align:center;margin:8px 0;line-height:1.6;z-index:2;">${vendorHTML}</div>
             <div style="font-size:0.8rem;color:${t.c1};text-align:center;line-height:1.6;max-width:260px;margin:6px 0;z-index:2;opacity:0.8;">${dealText}</div>
             <div style="background:${t.c1};color:#fff;padding:8px 32px;border-radius:30px;font-size:1.4rem;font-weight:700;margin-top:12px;z-index:2;">${price}</div>
+            ${notesBlock}
             <div style="font-size:0.65rem;color:${t.c2};margin-top:10px;z-index:2;text-align:center;opacity:0.7;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="position:absolute;bottom:8px;font-size:1.4rem;z-index:1;white-space:nowrap;">${t.emoji2}</div>
             <div style="position:absolute;bottom:24px;left:28px;right:28px;font-size:0.28rem;color:${t.c1};opacity:0.5;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -313,6 +326,7 @@ function render() {
                 <div style="width:40px;height:2px;background:${t.c3};margin:10px 0;"></div>
                 <div style="font-size:0.78rem;color:#666;text-align:center;line-height:1.6;max-width:260px;">${dealText}</div>
                 <div style="background:${t.c1};color:#fff;padding:10px 36px;font-family:'Bebas Neue',sans-serif;font-size:1.6rem;margin-top:14px;letter-spacing:2px;">${price}</div>
+                ${notesBlock}
                 <div style="font-size:0.65rem;color:#999;margin-top:10px;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
                 <div style="font-size:0.28rem;color:#999;text-align:center;line-height:1.4;margin-top:8px;padding:0 10px;">${disclaimer}</div>
             </div>
@@ -328,6 +342,7 @@ function render() {
             <div style="font-family:'Raleway',sans-serif;font-size:1.2rem;font-weight:700;color:${t.c2};text-align:center;line-height:1.6;z-index:2;margin:8px 0;">${vendorHTML}</div>
             <div style="font-size:0.78rem;color:${t.c1};text-align:center;line-height:1.5;max-width:240px;z-index:2;opacity:0.7;">${dealText}</div>
             <div style="background:${t.accent};color:#fff;padding:10px 34px;border-radius:4px;font-size:1.5rem;font-weight:900;margin-top:14px;z-index:2;font-family:'Montserrat',sans-serif;">${price}</div>
+            ${notesBlock}
             <div style="font-size:0.6rem;color:${t.c2};margin-top:10px;z-index:2;text-align:center;opacity:0.6;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="position:absolute;bottom:10px;left:20px;right:20px;font-size:0.28rem;color:${t.c1};opacity:0.4;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
         </div>`,
@@ -347,6 +362,7 @@ function render() {
                 <div style="width:50px;height:2px;background:${t.c3};margin:10px 0;"></div>
                 <div style="font-size:0.78rem;color:#666;text-align:center;line-height:1.6;max-width:260px;">${dealText}</div>
                 <div style="border:3px solid ${t.c1};color:${t.c1};padding:8px 30px;font-size:1.4rem;font-weight:900;margin-top:14px;font-family:'Montserrat',sans-serif;">${price}</div>
+                ${notesBlock}
                 <div style="font-size:0.6rem;color:#999;margin-top:10px;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             </div>
             <div style="position:absolute;bottom:10px;left:20px;right:20px;font-size:0.28rem;color:#999;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -366,6 +382,7 @@ function render() {
             <div style="font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:300;color:${t.c2};letter-spacing:2px;text-transform:uppercase;line-height:1.8;">${vendorHTML}</div>
             <div style="font-size:0.78rem;color:#777;line-height:1.6;max-width:280px;margin-top:10px;">${dealText}</div>
             <div style="display:inline-block;border:2px solid ${t.c1};color:${t.c1};padding:8px 28px;font-size:1.4rem;font-weight:700;margin-top:16px;align-self:flex-start;">${price}</div>
+            ${notesBlock}
             <div style="font-size:0.6rem;color:${t.c3};margin-top:12px;line-height:1.4;"><strong>${locName}</strong> — ${locAddr}</div>
             <div style="position:absolute;bottom:10px;left:55px;right:20px;font-size:0.28rem;color:${t.c1};opacity:0.4;text-align:left;line-height:1.4;z-index:2;">${disclaimer}</div>
         </div>`,
@@ -382,6 +399,7 @@ function render() {
                 <div style="font-family:'Oswald',sans-serif;font-size:1.1rem;color:#fff;text-align:center;line-height:1.7;margin:6px 0;font-weight:600;">${vendorHTML}</div>
                 <div style="font-size:0.78rem;color:${t.c1};text-align:center;line-height:1.5;max-width:230px;margin:6px 0;opacity:0.8;">${dealText}</div>
                 <div style="background:${t.c1};color:#fff;padding:8px 30px;border-radius:6px;font-family:'Oswald',sans-serif;font-size:1.4rem;letter-spacing:2px;margin-top:10px;">${price}</div>
+                ${notesBlockLight}
                 <div style="font-size:0.6rem;color:${t.c1};margin-top:8px;text-align:center;opacity:0.7;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
                 <div style="font-size:0.26rem;color:${t.c1};opacity:0.5;text-align:center;line-height:1.4;margin-top:6px;padding:0 6px;">${disclaimer}</div>
             </div>
@@ -401,6 +419,7 @@ function render() {
                 <div style="font-family:'Raleway',sans-serif;font-size:1.2rem;font-weight:600;color:rgba(255,255,255,0.9);margin:10px 0;line-height:1.6;">${vendorHTML}</div>
                 <div style="font-size:0.78rem;color:rgba(255,255,255,0.65);line-height:1.5;max-width:280px;margin:6px 0;">${dealText}</div>
                 <div style="display:inline-block;background:#fff;color:${t.c1};padding:10px 34px;font-family:'Bebas Neue',sans-serif;font-size:1.8rem;margin-top:14px;letter-spacing:2px;">${price}</div>
+                ${notesBlockLight}
                 <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);margin-top:10px;line-height:1.4;"><strong>${locName}</strong> — ${locAddr}</div>
             </div>
             <div style="position:absolute;bottom:10px;left:20px;right:20px;font-size:0.28rem;color:rgba(255,255,255,0.35);text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -418,6 +437,7 @@ function render() {
             <div style="font-family:'Oswald',sans-serif;font-size:1.1rem;color:${t.c3};text-align:center;line-height:1.6;z-index:2;text-shadow:0 0 8px ${t.c3}30;margin:6px 0;">${vendorHTML}</div>
             <div style="font-size:0.78rem;color:#777;text-align:center;line-height:1.6;max-width:250px;z-index:2;">${dealText}</div>
             <div style="border:2px solid ${t.c3};color:${t.c3};padding:8px 30px;font-size:1.4rem;font-weight:700;margin-top:14px;z-index:2;text-shadow:0 0 10px ${t.c3}50;font-family:'Bebas Neue',sans-serif;letter-spacing:3px;">${price}</div>
+            ${notesBlockLight}
             <div style="font-size:0.55rem;color:#666;margin-top:10px;z-index:2;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="position:absolute;bottom:18px;left:20px;right:20px;font-size:0.28rem;color:rgba(255,255,255,0.3);text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
         </div>`,
@@ -436,6 +456,7 @@ function render() {
             </div>
             <div style="font-size:0.78rem;color:${t.c1};text-align:center;line-height:1.6;max-width:260px;margin:8px 0;">${dealText}</div>
             <div style="background:${t.c1};color:#fff;padding:10px 40px;font-family:'Anton',sans-serif;font-size:1.8rem;letter-spacing:3px;">${price}</div>
+            ${notesBlock}
             <div style="font-size:0.6rem;color:${t.c1};margin-top:8px;text-align:center;opacity:0.7;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="font-size:1.4rem;margin-top:4px;white-space:nowrap;">${t.emoji2}</div>
             <div style="position:absolute;bottom:10px;left:20px;right:20px;font-size:0.28rem;color:${t.c1};opacity:0.4;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -454,6 +475,7 @@ function render() {
             <div style="font-family:'Dancing Script',cursive;font-size:1.3rem;color:${t.accent};text-align:center;line-height:1.6;z-index:2;margin:6px 0;">${vendorHTML}</div>
             <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);text-align:center;line-height:1.6;max-width:250px;z-index:2;">${dealText}</div>
             <div style="border:2px solid ${t.accent};color:${t.accent};padding:8px 28px;font-size:1.3rem;font-weight:700;margin-top:12px;z-index:2;">${price}</div>
+            ${notesBlockLight}
             <div style="font-size:0.55rem;color:rgba(255,255,255,0.4);margin-top:8px;z-index:2;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="font-size:1.2rem;margin-top:6px;opacity:0.6;white-space:nowrap;">${t.emoji2}</div>
             <div style="position:absolute;bottom:20px;left:26px;right:26px;font-size:0.28rem;color:rgba(255,255,255,0.3);text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -476,6 +498,7 @@ function render() {
             <div style="font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.6;z-index:2;margin:8px 0;">${vendorHTML}</div>
             <div style="font-size:0.78rem;color:${t.c1};text-align:center;line-height:1.5;max-width:260px;z-index:2;opacity:0.7;">${dealText}</div>
             <div style="background:linear-gradient(135deg,${t.c1},${t.c2});color:#fff;padding:10px 36px;border-radius:30px;font-size:1.4rem;font-weight:700;margin-top:14px;z-index:2;font-family:'Poppins',sans-serif;">${price}</div>
+            ${notesBlock}
             <div style="font-size:0.6rem;color:${t.c2};margin-top:10px;z-index:2;text-align:center;opacity:0.7;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="position:absolute;bottom:8px;font-size:1.2rem;z-index:2;white-space:nowrap;">${t.emoji2}</div>
             <div style="position:absolute;bottom:22px;left:24px;right:24px;font-size:0.28rem;color:${t.c1};opacity:0.4;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -495,6 +518,7 @@ function render() {
                 <div style="font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:600;color:#fff;text-align:center;line-height:1.6;margin:6px 0;">${vendorHTML}</div>
                 <div style="font-size:0.78rem;color:rgba(255,255,255,0.7);text-align:center;line-height:1.5;max-width:240px;margin:4px 0;">${dealText}</div>
                 <div style="background:rgba(255,255,255,0.25);backdrop-filter:blur(8px);color:#fff;padding:10px 34px;border-radius:14px;font-size:1.4rem;font-weight:700;margin-top:12px;font-family:'Montserrat',sans-serif;border:1px solid rgba(255,255,255,0.3);">${price}</div>
+                ${notesBlockLight}
                 <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);margin-top:8px;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
                 <div style="font-size:1.2rem;margin-top:6px;white-space:nowrap;">${t.emoji2}</div>
             </div>
@@ -515,6 +539,7 @@ function render() {
             <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.7;z-index:2;margin:10px 0;">${vendorHTML}</div>
             <div style="font-size:0.78rem;color:#888;text-align:center;line-height:1.6;max-width:260px;z-index:2;margin:4px 0;">${dealText}</div>
             <div style="border:2px solid ${t.c1};color:${t.c1};padding:10px 36px;font-size:1.3rem;font-weight:700;margin-top:16px;z-index:2;font-family:'Cormorant Garamond',serif;letter-spacing:2px;">${price}</div>
+            ${notesBlock}
             <div style="font-size:0.6rem;color:${t.c3};margin-top:12px;z-index:2;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="position:absolute;bottom:36px;left:60px;right:60px;font-size:0.28rem;color:#bbb;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
         </div>`,
@@ -531,6 +556,7 @@ function render() {
                 <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);text-align:center;line-height:1.5;max-width:240px;margin:4px 0;">${dealText}</div>
             </div>
             <div style="background:#fff;color:${t.c1};padding:10px 36px;border-radius:16px;font-size:1.5rem;font-weight:800;margin-top:10px;z-index:2;font-family:'Montserrat',sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.1);">${price}</div>
+            ${notesBlockLight}
             <div style="font-size:0.6rem;color:rgba(255,255,255,0.7);margin-top:10px;z-index:2;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="position:absolute;bottom:8px;font-size:1.2rem;z-index:2;white-space:nowrap;">${t.emoji2}</div>
             <div style="position:absolute;bottom:22px;left:24px;right:24px;font-size:0.28rem;color:rgba(255,255,255,0.35);text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -551,6 +577,7 @@ function render() {
             <div style="font-family:'Comfortaa',sans-serif;font-size:1rem;font-weight:700;color:${t.c2};text-align:center;line-height:1.7;z-index:2;margin:8px 0;">${vendorHTML}</div>
             <div style="font-size:0.78rem;color:${t.c1};text-align:center;line-height:1.5;max-width:260px;z-index:2;opacity:0.7;">${dealText}</div>
             <div style="background:${t.c2};color:#fff;padding:10px 34px;border-radius:24px;font-size:1.3rem;font-weight:700;margin-top:14px;z-index:2;font-family:'Comfortaa',sans-serif;">${price}</div>
+            ${notesBlock}
             <div style="font-size:0.6rem;color:${t.c2};margin-top:10px;z-index:2;text-align:center;opacity:0.7;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="font-size:1.2rem;margin-top:6px;z-index:2;white-space:nowrap;">${t.emoji2}</div>
             <div style="position:absolute;bottom:10px;left:24px;right:24px;font-size:0.28rem;color:${t.c1};opacity:0.35;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -571,6 +598,7 @@ function render() {
                 <div style="font-family:'Montserrat',sans-serif;font-size:1.05rem;font-weight:700;color:${t.c1};text-align:center;line-height:1.6;margin:6px 0;">${vendorHTML}</div>
                 <div style="font-size:0.78rem;color:#666;text-align:center;line-height:1.5;max-width:250px;margin:4px 0;">${dealText}</div>
                 <div style="background:${t.c1};color:#fff;padding:10px 34px;font-family:'Archivo Black',sans-serif;font-size:1.5rem;margin-top:12px;letter-spacing:2px;">${price}</div>
+                ${notesBlock}
                 <div style="font-size:0.6rem;color:#888;margin-top:8px;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             </div>
             <div style="position:absolute;bottom:10px;left:20px;right:20px;font-size:0.28rem;color:#999;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -590,6 +618,7 @@ function render() {
             <div style="font-family:'Josefin Sans',sans-serif;font-size:1.1rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.7;z-index:2;margin:8px 0;">${vendorHTML}</div>
             <div style="font-size:0.78rem;color:${t.c1};text-align:center;line-height:1.5;max-width:260px;z-index:2;opacity:0.7;">${dealText}</div>
             <div style="background:${t.c1};color:#fff;padding:10px 34px;border-radius:8px;font-size:1.4rem;font-weight:700;margin-top:14px;z-index:2;font-family:'Josefin Sans',sans-serif;">${price}</div>
+            ${notesBlock}
             <div style="font-size:0.6rem;color:${t.c2};margin-top:10px;z-index:2;text-align:center;opacity:0.7;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             <div style="font-size:1.2rem;margin-top:6px;z-index:2;white-space:nowrap;">${t.emoji2}</div>
             <div style="position:absolute;bottom:10px;left:24px;right:24px;font-size:0.28rem;color:${t.c1};opacity:0.35;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -608,6 +637,7 @@ function render() {
                 <div style="font-family:'Montserrat',sans-serif;font-size:1.05rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.6;margin:6px 0;">${vendorHTML}</div>
                 <div style="font-size:0.78rem;color:#777;text-align:center;line-height:1.5;max-width:240px;margin:4px 0;">${dealText}</div>
                 <div style="background:linear-gradient(135deg,${t.c1},${t.c2});color:#fff;padding:10px 32px;border-radius:10px;font-size:1.4rem;font-weight:700;margin-top:10px;font-family:'Montserrat',sans-serif;">${price}</div>
+                ${notesBlock}
                 <div style="font-size:0.55rem;color:#999;margin-top:8px;text-align:center;line-height:1.4;"><strong>${locName}</strong><br>${locAddr}</div>
             </div>
             <div style="position:absolute;bottom:8px;font-size:1.2rem;z-index:2;opacity:0.7;white-space:nowrap;">${t.emoji2}</div>
@@ -626,6 +656,7 @@ function render() {
             <div style="font-size:1rem;font-weight:700;color:rgba(255,255,255,0.9);text-align:center;line-height:1.5;z-index:2;">${vendorHTML}</div>
             <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);text-align:center;line-height:1.4;max-width:220px;margin:4px 0;z-index:2;">${dealText}</div>
             <div style="background:#fff;color:${t.c1};padding:6px 24px;border-radius:4px;font-size:1.2rem;font-weight:900;margin-top:8px;z-index:2;font-family:'Montserrat',sans-serif;">${price}</div>
+            ${notesBlockSmLight}
             <div style="font-size:0.5rem;color:rgba(255,255,255,0.5);margin-top:6px;z-index:2;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>Facebook & Instagram</div>
             <div style="position:absolute;bottom:8px;left:16px;right:16px;font-size:0.24rem;color:rgba(255,255,255,0.3);text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
         </div>`,
@@ -643,6 +674,7 @@ function render() {
                 <div style="font-size:0.9rem;font-weight:700;color:${t.c2};text-align:center;line-height:1.4;margin:4px 0;">${vendorHTML}</div>
                 <div style="font-size:0.65rem;color:#888;text-align:center;line-height:1.4;max-width:180px;margin:2px 0;">${dealText}</div>
                 <div style="background:${t.c1};color:#fff;padding:5px 20px;border-radius:20px;font-size:1rem;font-weight:700;margin-top:6px;">${price}</div>
+                ${notesBlockSm}
                 <div style="font-size:0.5rem;color:#999;margin-top:4px;text-align:center;">${locName}</div>
             </div>
             <div style="position:absolute;bottom:14px;font-size:0.55rem;color:${t.c3};z-index:3;">Facebook & Instagram</div>
@@ -661,6 +693,7 @@ function render() {
             <div style="font-family:'Oswald',sans-serif;font-size:0.95rem;color:${t.c3};text-align:center;line-height:1.5;z-index:2;text-shadow:0 0 8px ${t.c3}30;">${vendorHTML}</div>
             <div style="font-size:0.65rem;color:#777;text-align:center;line-height:1.4;max-width:210px;z-index:2;margin:3px 0;">${dealText}</div>
             <div style="border:2px solid ${t.c3};color:${t.c3};padding:6px 22px;font-size:1.1rem;font-weight:700;margin-top:8px;z-index:2;text-shadow:0 0 10px ${t.c3}50;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;">${price}</div>
+            ${notesBlockSmLight}
             <div style="font-size:0.45rem;color:#666;margin-top:5px;z-index:2;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>Facebook & Instagram</div>
             <div style="position:absolute;bottom:6px;left:14px;right:14px;font-size:0.22rem;color:rgba(255,255,255,0.25);text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
         </div>`,
@@ -677,6 +710,7 @@ function render() {
                 <div style="font-family:'Poppins',sans-serif;font-size:0.9rem;font-weight:600;color:#fff;text-align:center;line-height:1.5;margin:3px 0;">${vendorHTML}</div>
                 <div style="font-size:0.65rem;color:rgba(255,255,255,0.65);text-align:center;line-height:1.4;max-width:200px;margin:3px 0;">${dealText}</div>
                 <div style="background:rgba(255,255,255,0.25);backdrop-filter:blur(8px);color:#fff;padding:6px 22px;border-radius:12px;font-size:1.1rem;font-weight:700;margin-top:6px;font-family:'Montserrat',sans-serif;border:1px solid rgba(255,255,255,0.3);">${price}</div>
+                ${notesBlockSmLight}
                 <div style="font-size:0.45rem;color:rgba(255,255,255,0.5);margin-top:4px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>Facebook & Instagram</div>
             </div>
             <div style="position:absolute;bottom:6px;left:14px;right:14px;font-size:0.22rem;color:rgba(255,255,255,0.25);text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -695,6 +729,7 @@ function render() {
                 <div style="font-family:'Oswald',sans-serif;font-size:0.95rem;font-weight:700;color:${t.c1};text-align:center;line-height:1.5;letter-spacing:1px;">${vendorHTML}</div>
                 <div style="font-size:0.65rem;color:#666;text-align:center;line-height:1.4;max-width:210px;margin:3px 0;">${dealText}</div>
                 <div style="background:${t.c1};color:#fff;padding:6px 24px;font-family:'Bebas Neue',sans-serif;font-size:1.3rem;margin-top:6px;letter-spacing:2px;">${price}</div>
+                ${notesBlockSm}
                 <div style="font-size:0.45rem;color:#999;margin-top:4px;text-align:center;line-height:1.3;"><strong>${locName}</strong> · Facebook & Instagram</div>
                 <div style="font-size:0.22rem;color:#bbb;text-align:center;line-height:1.3;margin-top:4px;padding:0 8px;">${disclaimer}</div>
             </div>
@@ -714,6 +749,7 @@ function render() {
             <div style="font-family:'Comfortaa',sans-serif;font-size:0.85rem;font-weight:700;color:${t.c2};text-align:center;line-height:1.5;z-index:2;margin:3px 0;">${vendorHTML}</div>
             <div style="font-size:0.65rem;color:${t.c1};text-align:center;line-height:1.4;max-width:210px;z-index:2;opacity:0.7;margin:2px 0;">${dealText}</div>
             <div style="background:${t.c2};color:#fff;padding:6px 22px;border-radius:20px;font-size:1rem;font-weight:700;margin-top:6px;z-index:2;font-family:'Comfortaa',sans-serif;">${price}</div>
+            ${notesBlockSm}
             <div style="font-size:0.45rem;color:${t.c2};margin-top:4px;z-index:2;text-align:center;opacity:0.7;line-height:1.3;"><strong>${locName}</strong><br>Facebook & Instagram</div>
             <div style="position:absolute;bottom:6px;left:14px;right:14px;font-size:0.22rem;color:${t.c1};opacity:0.3;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
         </div>`,
@@ -729,6 +765,7 @@ function render() {
                 <div style="font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.5;margin:4px 0;">${vendorHTML}</div>
                 <div style="font-size:0.65rem;color:#888;text-align:center;line-height:1.4;max-width:200px;margin:2px 0;">${dealText}</div>
                 <div style="border:2px solid ${t.c1};color:${t.c1};padding:6px 22px;font-size:1rem;font-weight:700;margin-top:6px;font-family:'Cormorant Garamond',serif;letter-spacing:1px;">${price}</div>
+                ${notesBlockSm}
                 <div style="font-size:0.45rem;color:${t.c3};margin-top:5px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>Facebook & Instagram</div>
             </div>
             <div style="position:absolute;bottom:5px;left:14px;right:14px;font-size:0.22rem;color:#bbb;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -746,6 +783,7 @@ function render() {
                 <div style="font-family:'Raleway',sans-serif;font-size:0.9rem;font-weight:700;color:#fff;text-align:center;line-height:1.5;margin:3px 0;">${vendorHTML}</div>
                 <div style="font-size:0.6rem;color:rgba(255,255,255,0.7);text-align:center;line-height:1.4;max-width:200px;margin:2px 0;">${dealText}</div>
                 <div style="background:#fff;color:${t.c1};padding:6px 22px;border-radius:14px;font-size:1.1rem;font-weight:800;margin-top:6px;font-family:'Montserrat',sans-serif;box-shadow:0 4px 15px rgba(0,0,0,0.1);">${price}</div>
+                ${notesBlockSmLight}
                 <div style="font-size:0.45rem;color:rgba(255,255,255,0.6);margin-top:4px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>Facebook & Instagram</div>
             </div>
             <div style="position:absolute;bottom:6px;left:14px;right:14px;font-size:0.22rem;color:rgba(255,255,255,0.3);text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -765,6 +803,7 @@ function render() {
                 <div style="font-family:'Montserrat',sans-serif;font-size:0.85rem;font-weight:700;color:${t.c1};text-align:center;line-height:1.5;margin:3px 0;">${vendorHTML}</div>
                 <div style="font-size:0.6rem;color:#666;text-align:center;line-height:1.4;max-width:200px;margin:2px 0;">${dealText}</div>
                 <div style="background:${t.c1};color:#fff;padding:6px 22px;font-family:'Archivo Black',sans-serif;font-size:1.2rem;margin-top:6px;letter-spacing:2px;">${price}</div>
+                ${notesBlockSm}
                 <div style="font-size:0.45rem;color:#888;margin-top:4px;text-align:center;line-height:1.3;"><strong>${locName}</strong> · Facebook & Instagram</div>
             </div>
             <div style="position:absolute;bottom:5px;left:14px;right:14px;font-size:0.22rem;color:#999;text-align:center;line-height:1.4;z-index:2;">${disclaimer}</div>
@@ -783,6 +822,7 @@ function render() {
                 <div style="font-family:'Montserrat',sans-serif;font-size:0.85rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.5;margin:3px 0;">${vendorHTML}</div>
                 <div style="font-size:0.6rem;color:#777;text-align:center;line-height:1.4;max-width:200px;margin:2px 0;">${dealText}</div>
                 <div style="background:linear-gradient(135deg,${t.c1},${t.c2});color:#fff;padding:6px 22px;border-radius:10px;font-size:1.1rem;font-weight:700;margin-top:6px;font-family:'Montserrat',sans-serif;">${price}</div>
+                ${notesBlockSm}
                 <div style="font-size:0.45rem;color:#999;margin-top:4px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>Facebook & Instagram</div>
             </div>
             <div style="font-size:0.9rem;margin-top:4px;z-index:2;opacity:0.7;white-space:nowrap;">${t.emoji2}</div>
@@ -814,6 +854,7 @@ function render() {
                     <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:${t.c2};text-align:center;line-height:1.5;margin:6px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:${t.c1};text-align:center;line-height:1.5;max-width:90%;opacity:0.8;margin:4px 0;">${dealText}</div>
                     <div style="background:${t.c1};color:#fff;padding:7px 28px;border-radius:30px;font-size:1.2rem;font-weight:700;margin-top:8px;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.55rem;color:${t.c2};margin-top:6px;text-align:center;opacity:0.7;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -835,6 +876,7 @@ function render() {
                 <div style="width:40px;height:2px;background:${t.c3};margin:8px 0;"></div>
                 <div style="font-size:0.72rem;color:#666;text-align:center;line-height:1.5;max-width:90%;">${dealText}</div>
                 <div style="background:${t.c1};color:#fff;padding:8px 30px;font-family:'Bebas Neue',sans-serif;font-size:1.4rem;margin-top:10px;letter-spacing:2px;">${price}</div>
+                ${notesBlock}
                 <div style="font-size:0.55rem;color:#999;margin-top:8px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 <div style="font-size:0.24rem;color:#999;text-align:center;line-height:1.3;margin-top:6px;padding:0 10px;">${disclaimer}</div>
             </div>
@@ -854,6 +896,7 @@ function render() {
                     <div style="font-family:'Raleway',sans-serif;font-size:1.05rem;font-weight:700;color:${t.c2};text-align:center;line-height:1.5;margin:6px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:${t.c1};text-align:center;line-height:1.5;max-width:90%;opacity:0.7;margin:4px 0;">${dealText}</div>
                     <div style="background:${t.accent};color:#fff;padding:8px 30px;border-radius:4px;font-size:1.3rem;font-weight:900;margin-top:10px;font-family:'Montserrat',sans-serif;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.52rem;color:${t.c2};margin-top:8px;text-align:center;opacity:0.6;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -876,6 +919,7 @@ function render() {
                     <div style="width:40px;height:2px;background:${t.c3};margin:8px 0;"></div>
                     <div style="font-size:0.72rem;color:#666;text-align:center;line-height:1.5;max-width:90%;">${dealText}</div>
                     <div style="border:3px solid ${t.c1};color:${t.c1};padding:7px 26px;font-size:1.2rem;font-weight:900;margin-top:10px;font-family:'Montserrat',sans-serif;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.52rem;color:#999;margin-top:6px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -899,6 +943,7 @@ function render() {
                 <div style="font-family:'Montserrat',sans-serif;font-size:0.9rem;font-weight:300;color:${t.c2};letter-spacing:2px;text-transform:uppercase;line-height:1.7;">${vendorHTML}</div>
                 <div style="font-size:0.72rem;color:#777;line-height:1.5;max-width:95%;margin-top:8px;">${dealText}</div>
                 <div style="display:inline-block;border:2px solid ${t.c1};color:${t.c1};padding:7px 24px;font-size:1.2rem;font-weight:700;margin-top:12px;align-self:flex-start;">${price}</div>
+                ${notesBlock}
                 <div style="font-size:0.52rem;color:${t.c3};margin-top:8px;line-height:1.3;"><strong>${locName}</strong> — ${locAddr}</div>
             </div>
             <div style="position:absolute;bottom:6px;left:45px;right:16px;font-size:0.24rem;color:${t.c1};opacity:0.4;text-align:left;line-height:1.3;">${disclaimer}</div>
@@ -919,6 +964,7 @@ function render() {
                     <div style="font-family:'Oswald',sans-serif;font-size:1rem;color:#fff;text-align:center;line-height:1.6;font-weight:600;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:${t.c1};text-align:center;line-height:1.4;max-width:90%;opacity:0.8;margin:4px 0;">${dealText}</div>
                     <div style="background:${t.c1};color:#fff;padding:7px 26px;border-radius:6px;font-family:'Oswald',sans-serif;font-size:1.2rem;letter-spacing:2px;margin-top:8px;">${price}</div>
+                    ${notesBlockLight}
                     <div style="font-size:0.5rem;color:${t.c1};margin-top:6px;text-align:center;opacity:0.7;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                     <div style="font-size:0.22rem;color:${t.c1};opacity:0.5;text-align:center;line-height:1.3;margin-top:4px;padding:0 6px;">${disclaimer}</div>
                 </div>
@@ -942,6 +988,7 @@ function render() {
                     <div style="font-family:'Raleway',sans-serif;font-size:1rem;font-weight:600;color:rgba(255,255,255,0.9);line-height:1.5;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:rgba(255,255,255,0.65);line-height:1.4;max-width:95%;margin:4px 0;">${dealText}</div>
                     <div style="display:inline-block;background:#fff;color:${t.c1};padding:8px 28px;font-family:'Bebas Neue',sans-serif;font-size:1.5rem;margin-top:10px;letter-spacing:2px;align-self:flex-start;">${price}</div>
+                    ${notesBlockLight}
                     <div style="font-size:0.5rem;color:rgba(255,255,255,0.6);margin-top:6px;line-height:1.3;"><strong>${locName}</strong> — ${locAddr}</div>
                 </div>
             </div>
@@ -964,6 +1011,7 @@ function render() {
                     <div style="font-family:'Oswald',sans-serif;font-size:1rem;color:${t.c3};text-align:center;line-height:1.5;text-shadow:0 0 8px ${t.c3}30;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:#777;text-align:center;line-height:1.5;max-width:90%;margin:4px 0;">${dealText}</div>
                     <div style="border:2px solid ${t.c3};color:${t.c3};padding:7px 26px;font-size:1.2rem;font-weight:700;margin-top:10px;text-shadow:0 0 10px ${t.c3}50;font-family:'Bebas Neue',sans-serif;letter-spacing:3px;">${price}</div>
+                    ${notesBlockLight}
                     <div style="font-size:0.5rem;color:#666;margin-top:6px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -988,6 +1036,7 @@ function render() {
                     </div>
                     <div style="font-size:0.72rem;color:${t.c1};text-align:center;line-height:1.5;max-width:90%;margin:6px 0;">${dealText}</div>
                     <div style="background:${t.c1};color:#fff;padding:8px 34px;font-family:'Anton',sans-serif;font-size:1.5rem;letter-spacing:3px;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.5rem;color:${t.c1};margin-top:6px;text-align:center;opacity:0.7;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -1012,6 +1061,7 @@ function render() {
                     <div style="font-family:'Dancing Script',cursive;font-size:1.1rem;color:${t.accent};text-align:center;line-height:1.5;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-align:center;line-height:1.5;max-width:90%;margin:4px 0;">${dealText}</div>
                     <div style="border:2px solid ${t.accent};color:${t.accent};padding:7px 24px;font-size:1.1rem;font-weight:700;margin-top:10px;">${price}</div>
+                    ${notesBlockLight}
                     <div style="font-size:0.5rem;color:rgba(255,255,255,0.4);margin-top:6px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                     <div style="font-size:1rem;margin-top:4px;opacity:0.6;white-space:nowrap;">${t.emoji2}</div>
                 </div>
@@ -1039,6 +1089,7 @@ function render() {
                     <div style="font-family:'Poppins',sans-serif;font-size:1rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.5;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:${t.c1};text-align:center;line-height:1.5;max-width:90%;opacity:0.7;margin:4px 0;">${dealText}</div>
                     <div style="background:linear-gradient(135deg,${t.c1},${t.c2});color:#fff;padding:8px 30px;border-radius:30px;font-size:1.2rem;font-weight:700;margin-top:8px;font-family:'Poppins',sans-serif;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.52rem;color:${t.c2};margin-top:6px;text-align:center;opacity:0.7;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -1061,6 +1112,7 @@ function render() {
                     <div style="font-family:'Poppins',sans-serif;font-size:1rem;font-weight:600;color:#fff;text-align:center;line-height:1.5;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:rgba(255,255,255,0.7);text-align:center;line-height:1.4;max-width:90%;margin:4px 0;">${dealText}</div>
                     <div style="background:rgba(255,255,255,0.25);backdrop-filter:blur(8px);color:#fff;padding:8px 28px;border-radius:14px;font-size:1.2rem;font-weight:700;margin-top:8px;font-family:'Montserrat',sans-serif;border:1px solid rgba(255,255,255,0.3);">${price}</div>
+                    ${notesBlockLight}
                     <div style="font-size:0.5rem;color:rgba(255,255,255,0.6);margin-top:6px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -1085,6 +1137,7 @@ function render() {
                     <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.6;margin:6px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:#888;text-align:center;line-height:1.5;max-width:90%;margin:4px 0;">${dealText}</div>
                     <div style="border:2px solid ${t.c1};color:${t.c1};padding:8px 30px;font-size:1.1rem;font-weight:700;margin-top:10px;font-family:'Cormorant Garamond',serif;letter-spacing:2px;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.52rem;color:${t.c3};margin-top:8px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -1107,6 +1160,7 @@ function render() {
                         <div style="font-size:0.72rem;color:rgba(255,255,255,0.75);text-align:center;line-height:1.4;max-width:90%;margin:4px 0;">${dealText}</div>
                     </div>
                     <div style="background:#fff;color:${t.c1};padding:8px 30px;border-radius:16px;font-size:1.3rem;font-weight:800;margin-top:10px;font-family:'Montserrat',sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.1);">${price}</div>
+                    ${notesBlockLight}
                     <div style="font-size:0.52rem;color:rgba(255,255,255,0.7);margin-top:6px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
@@ -1131,6 +1185,7 @@ function render() {
                     <div style="font-family:'Comfortaa',sans-serif;font-size:0.95rem;font-weight:700;color:${t.c2};text-align:center;line-height:1.6;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:${t.c1};text-align:center;line-height:1.4;max-width:90%;opacity:0.7;margin:4px 0;">${dealText}</div>
                     <div style="background:${t.c2};color:#fff;padding:8px 28px;border-radius:24px;font-size:1.1rem;font-weight:700;margin-top:8px;font-family:'Comfortaa',sans-serif;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.5rem;color:${t.c2};margin-top:6px;text-align:center;opacity:0.7;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                     <div style="font-size:0.9rem;margin-top:4px;white-space:nowrap;">${t.emoji2}</div>
                 </div>
@@ -1159,6 +1214,7 @@ function render() {
                         <div style="font-family:'Montserrat',sans-serif;font-size:0.95rem;font-weight:700;color:${t.c1};text-align:center;line-height:1.5;margin:4px 0;">${vendorHTML}</div>
                         <div style="font-size:0.72rem;color:#666;text-align:center;line-height:1.4;max-width:90%;margin:4px 0;">${dealText}</div>
                         <div style="background:${t.c1};color:#fff;padding:8px 28px;font-family:'Archivo Black',sans-serif;font-size:1.3rem;margin-top:8px;letter-spacing:2px;">${price}</div>
+                        ${notesBlock}
                         <div style="font-size:0.5rem;color:#888;margin-top:6px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                     </div>
                 </div>
@@ -1184,6 +1240,7 @@ function render() {
                     <div style="font-family:'Josefin Sans',sans-serif;font-size:1rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.6;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:${t.c1};text-align:center;line-height:1.4;max-width:90%;opacity:0.7;margin:4px 0;">${dealText}</div>
                     <div style="background:${t.c1};color:#fff;padding:8px 28px;border-radius:8px;font-size:1.2rem;font-weight:700;margin-top:8px;font-family:'Josefin Sans',sans-serif;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.5rem;color:${t.c2};margin-top:6px;text-align:center;opacity:0.7;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                     <div style="font-size:0.9rem;margin-top:4px;white-space:nowrap;">${t.emoji2}</div>
                 </div>
@@ -1207,6 +1264,7 @@ function render() {
                     <div style="font-family:'Montserrat',sans-serif;font-size:0.95rem;font-weight:600;color:${t.c2};text-align:center;line-height:1.5;margin:4px 0;">${vendorHTML}</div>
                     <div style="font-size:0.72rem;color:#777;text-align:center;line-height:1.4;max-width:90%;margin:4px 0;">${dealText}</div>
                     <div style="background:linear-gradient(135deg,${t.c1},${t.c2});color:#fff;padding:8px 28px;border-radius:10px;font-size:1.2rem;font-weight:700;margin-top:8px;font-family:'Montserrat',sans-serif;">${price}</div>
+                    ${notesBlock}
                     <div style="font-size:0.5rem;color:#999;margin-top:6px;text-align:center;line-height:1.3;"><strong>${locName}</strong><br>${locAddr}</div>
                 </div>
             </div>
