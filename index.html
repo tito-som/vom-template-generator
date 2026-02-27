@@ -781,43 +781,49 @@ function openPrintView(card, index) {
         function scaleFlyer() {
             var toolbar = document.querySelector('.toolbar');
             var wrap = document.querySelector('.flyer-wrap');
+            var container = document.querySelector('.print-container');
             if (!wrap) return;
             var toolbarH = toolbar ? toolbar.offsetHeight : 0;
             var availW = window.innerWidth;
             var availH = window.innerHeight - toolbarH;
+            var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
 
-            if (currentOrientation === 'landscape' && !IS_SOCIAL) {
-                /* Rotate the flyer 90 degrees for landscape */
-                var scaleX = availW / REF_H;
-                var scaleY = availH / REF_W;
-                var s = Math.min(scaleX, scaleY);
-                wrap.style.transform = 'rotate(-90deg) scale(' + s + ')';
+            /* Always keep flyer upright — just scale to fit the viewport */
+            var scaleX = availW / REF_W;
+            var scaleY = availH / REF_H;
+            var s = Math.min(scaleX, scaleY);
+            wrap.style.transform = 'scale(' + s + ')';
+
+            /* Show landscape page frame behind the flyer for visual context */
+            if (isLandscape) {
+                container.style.background = 'linear-gradient(135deg, #e8e8e8, #d0d0d0)';
             } else {
-                var scaleX = availW / REF_W;
-                var scaleY = availH / REF_H;
-                var s = Math.min(scaleX, scaleY);
-                wrap.style.transform = 'scale(' + s + ')';
+                container.style.background = 'transparent';
             }
         }
 
         function doPrint() {
             var wrap = document.querySelector('.flyer-wrap');
             if (!wrap) return;
+            var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
 
-            if (currentOrientation === 'landscape' && !IS_SOCIAL) {
-                /* For landscape print */
-                var targetW = 1056;
-                var targetH = 816;
-                var sx = targetW / REF_H;
-                var sy = targetH / REF_W;
+            var style = document.createElement('style');
+            style.id = 'printPageStyle';
+
+            if (isLandscape) {
+                /* Landscape: scale flyer to fit centered on 11x8.5 page */
+                var pageW = 1056; /* 11in at 96dpi */
+                var pageH = 816;  /* 8.5in at 96dpi */
+                var sx = pageW / REF_W;
+                var sy = pageH / REF_H;
                 var s = Math.min(sx, sy);
-                wrap.style.transform = 'rotate(-90deg) scale(' + s + ')';
+                var scaledW = REF_W * s;
+                var scaledH = REF_H * s;
+                var offsetX = (pageW - scaledW) / 2;
+                var offsetY = (pageH - scaledH) / 2;
+                wrap.style.transform = 'translate(' + offsetX + 'px,' + offsetY + 'px) scale(' + s + ')';
                 wrap.style.transformOrigin = 'top left';
-                /* Adjust page size */
-                var style = document.createElement('style');
-                style.id = 'printPageStyle';
-                style.textContent = '@page { size: 11in 8.5in; margin: 0; }';
-                document.head.appendChild(style);
+                style.textContent = '@page { size: 11in 8.5in; margin: 0; } .print-container { background: #fff !important; }';
             } else {
                 var targetW = IS_SOCIAL ? 1080 : 816;
                 var targetH = IS_SOCIAL ? 1080 : 1056;
@@ -826,11 +832,9 @@ function openPrintView(card, index) {
                 var s = Math.min(sx, sy);
                 wrap.style.transform = 'scale(' + s + ')';
                 wrap.style.transformOrigin = 'top left';
-                var style = document.createElement('style');
-                style.id = 'printPageStyle';
                 style.textContent = '@page { size: ' + (IS_SOCIAL ? '1080px 1080px' : '8.5in 11in') + '; margin: 0; }';
-                document.head.appendChild(style);
             }
+            document.head.appendChild(style);
             window.print();
             /* Restore after print */
             setTimeout(function() {
@@ -853,7 +857,6 @@ function openPrintView(card, index) {
             wrap.style.transform = 'none';
             wrap.style.transformOrigin = 'top left';
 
-            /* High-res capture: 2x for crisp output */
             var captureScale = 3;
 
             setTimeout(function() {
@@ -873,14 +876,31 @@ function openPrintView(card, index) {
                     var finalCanvas;
 
                     if (isLandscape) {
-                        /* Rotate canvas 90 degrees for landscape */
+                        /*
+                         * Landscape: create a wider-than-tall canvas and
+                         * center the upright flyer on it (like placing a
+                         * portrait flyer on a landscape sheet of paper).
+                         */
+                        var landW = canvas.height;  /* swap dimensions for landscape */
+                        var landH = canvas.width;
+                        /* Scale flyer to fit inside the landscape canvas */
+                        var sx = landW / canvas.width;
+                        var sy = landH / canvas.height;
+                        var s = Math.min(sx, sy);
+                        var drawW = canvas.width * s;
+                        var drawH = canvas.height * s;
+
                         finalCanvas = document.createElement('canvas');
-                        finalCanvas.width = canvas.height;
-                        finalCanvas.height = canvas.width;
+                        finalCanvas.width = landW;
+                        finalCanvas.height = landH;
                         var ctx = finalCanvas.getContext('2d');
-                        ctx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
-                        ctx.rotate(-Math.PI / 2);
-                        ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+                        /* Fill with white background */
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, landW, landH);
+                        /* Draw flyer centered */
+                        var offX = (landW - drawW) / 2;
+                        var offY = (landH - drawH) / 2;
+                        ctx.drawImage(canvas, offX, offY, drawW, drawH);
                     } else {
                         finalCanvas = canvas;
                     }
@@ -888,21 +908,24 @@ function openPrintView(card, index) {
                     var fileName = TEMPLATE_NAME.replace(/[^a-zA-Z0-9]/g, '_') + '_' + currentOrientation;
 
                     if (fmt === 'pdf') {
-                        /* Generate PDF */
                         var jsPDF = window.jspdf.jsPDF;
-                        var pW = isLandscape ? 11 : 8.5;
-                        var pH = isLandscape ? 8.5 : 11;
-                        if (IS_SOCIAL) { pW = 11; pH = 11; }
-                        var doc = new jsPDF({
-                            orientation: isLandscape ? 'landscape' : 'portrait',
-                            unit: 'in',
-                            format: IS_SOCIAL ? [11, 11] : 'letter'
-                        });
-                        var imgData = finalCanvas.toDataURL('image/png');
-                        doc.addImage(imgData, 'PNG', 0, 0, pW, pH);
+                        var doc;
+                        if (IS_SOCIAL) {
+                            doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: [11, 11] });
+                            var imgData = finalCanvas.toDataURL('image/png');
+                            doc.addImage(imgData, 'PNG', 0, 0, 11, 11);
+                        } else if (isLandscape) {
+                            doc = new jsPDF({ orientation: 'landscape', unit: 'in', format: 'letter' });
+                            var imgData = finalCanvas.toDataURL('image/png');
+                            /* Letter landscape = 11 x 8.5 */
+                            doc.addImage(imgData, 'PNG', 0, 0, 11, 8.5);
+                        } else {
+                            doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+                            var imgData = finalCanvas.toDataURL('image/png');
+                            doc.addImage(imgData, 'PNG', 0, 0, 8.5, 11);
+                        }
                         doc.save(fileName + '.pdf');
                     } else {
-                        /* Generate image file */
                         var mimeTypes = {
                             png: 'image/png',
                             jpg: 'image/jpeg',
