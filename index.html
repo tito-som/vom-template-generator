@@ -819,13 +819,22 @@ function openPrintView(card, index) {
             var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
 
             if (isLandscape) {
-                /* Swap flyer-wrap to landscape dimensions */
+                /*
+                 * Landscape: keep the inner template at its original portrait
+                 * dimensions so the layout stays intact, then use CSS transform
+                 * to scale it to fill a landscape container.
+                 * scaleX stretches width from REF_W -> REF_H (wider)
+                 * scaleY shrinks height from REF_H -> REF_W (shorter)
+                 */
+                var sx = REF_H / REF_W;
+                var sy = REF_W / REF_H;
                 wrap.style.width = REF_H + 'px';
                 wrap.style.height = REF_W + 'px';
-                /* Change the inner flyer's aspect-ratio and size to landscape */
-                inner.style.width = REF_H + 'px';
-                inner.style.height = REF_W + 'px';
-                inner.style.aspectRatio = '11 / 8.5';
+                inner.style.width = REF_W + 'px';
+                inner.style.height = REF_H + 'px';
+                inner.style.aspectRatio = '8.5 / 11';
+                inner.style.transform = 'scale(' + sx + ',' + sy + ')';
+                inner.style.transformOrigin = 'top left';
             } else {
                 /* Restore portrait */
                 wrap.style.width = REF_W + 'px';
@@ -833,6 +842,8 @@ function openPrintView(card, index) {
                 inner.style.width = REF_W + 'px';
                 inner.style.height = REF_H + 'px';
                 inner.style.aspectRatio = IS_SOCIAL ? '1 / 1' : '8.5 / 11';
+                inner.style.transform = 'none';
+                inner.style.transformOrigin = 'top left';
             }
         }
 
@@ -889,13 +900,26 @@ function openPrintView(card, index) {
             document.head.appendChild(style);
 
             var wrap = document.querySelector('.flyer-wrap');
+            var inner = wrap ? wrap.querySelector(':scope > div') : null;
             var origWrapTransform = wrap.style.transform;
 
+            /* For landscape: temporarily set inner to actual landscape dimensions
+               so browser prints real layout, not a CSS-transformed one */
+            var origInnerTransform, origInnerW, origInnerH, origInnerAR;
+            if (isLandscape && inner) {
+                origInnerTransform = inner.style.transform;
+                origInnerW = inner.style.width;
+                origInnerH = inner.style.height;
+                origInnerAR = inner.style.aspectRatio;
+                inner.style.transform = 'none';
+                inner.style.width = curW + 'px';
+                inner.style.height = curH + 'px';
+                inner.style.aspectRatio = '11 / 8.5';
+            }
+
             /*
-             * Always scale to fit within a portrait letter page (816x1056 at 96dpi)
-             * as worst-case fallback. If the browser respects the @page size for
-             * landscape (1056x816), the content will still fit — just with extra room.
-             * This prevents clipping if the browser ignores landscape page size.
+             * Scale to fit within a portrait letter page (816x1056 at 96dpi)
+             * as worst-case fallback if browser ignores @page landscape.
              */
             var safeW = 816;
             var safeH = 1056;
@@ -910,6 +934,12 @@ function openPrintView(card, index) {
                 if (ps) ps.remove();
                 wrap.style.transform = origWrapTransform;
                 wrap.style.transformOrigin = 'center center';
+                if (isLandscape && inner) {
+                    inner.style.transform = origInnerTransform;
+                    inner.style.width = origInnerW;
+                    inner.style.height = origInnerH;
+                    inner.style.aspectRatio = origInnerAR;
+                }
                 scaleFlyer();
             }, 500);
         }
@@ -920,12 +950,29 @@ function openPrintView(card, index) {
             overlay.classList.add('active');
 
             var wrap = document.querySelector('.flyer-wrap');
-            var origTransform = wrap.style.transform;
+            var inner = wrap ? wrap.querySelector(':scope > div') : null;
+            var origWrapTransform = wrap.style.transform;
             wrap.style.transform = 'none';
 
+            var isLand = currentOrientation === 'landscape' && !IS_SOCIAL;
             var curW = getCurW();
             var curH = getCurH();
             var captureScale = 3;
+
+            /* For landscape: temporarily remove inner scale transform and set
+               inner div to actual landscape dimensions so html2canvas captures
+               it correctly (html2canvas doesn't handle CSS scale transforms). */
+            var origInnerTransform, origInnerW, origInnerH, origInnerAR;
+            if (isLand && inner) {
+                origInnerTransform = inner.style.transform;
+                origInnerW = inner.style.width;
+                origInnerH = inner.style.height;
+                origInnerAR = inner.style.aspectRatio;
+                inner.style.transform = 'none';
+                inner.style.width = curW + 'px';
+                inner.style.height = curH + 'px';
+                inner.style.aspectRatio = '11 / 8.5';
+            }
 
             setTimeout(function() {
                 html2canvas(wrap, {
@@ -936,7 +983,13 @@ function openPrintView(card, index) {
                     width: curW,
                     height: curH
                 }).then(function(finalCanvas) {
-                    wrap.style.transform = origTransform;
+                    wrap.style.transform = origWrapTransform;
+                    if (isLand && inner) {
+                        inner.style.transform = origInnerTransform;
+                        inner.style.width = origInnerW;
+                        inner.style.height = origInnerH;
+                        inner.style.aspectRatio = origInnerAR;
+                    }
 
                     var isLandscape = currentOrientation === 'landscape' && !IS_SOCIAL;
                     var fileName = TEMPLATE_NAME.replace(/[^a-zA-Z0-9]/g, '_') + '_' + currentOrientation;
@@ -980,7 +1033,13 @@ function openPrintView(card, index) {
 
                     overlay.classList.remove('active');
                 }).catch(function(err) {
-                    wrap.style.transform = origTransform;
+                    wrap.style.transform = origWrapTransform;
+                    if (isLand && inner) {
+                        inner.style.transform = origInnerTransform;
+                        inner.style.width = origInnerW;
+                        inner.style.height = origInnerH;
+                        inner.style.aspectRatio = origInnerAR;
+                    }
                     overlay.classList.remove('active');
                     alert('Error generating image: ' + err.message);
                 });
