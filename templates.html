@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VOM Template Generator - Vendor of the Month</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;600;700;900&family=Dancing+Script:wght@700&family=Bebas+Neue&family=Oswald:wght@400;600;700&family=Raleway:wght@300;400;600;700&family=Cormorant+Garamond:wght@400;600;700&family=Permanent+Marker&family=Anton&family=Abril+Fatface&family=Lobster&family=Poppins:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Roboto+Slab:wght@400;700&family=Merriweather:wght@400;700&family=Pacifico&family=Sacramento&family=Great+Vibes&family=Righteous&family=Cinzel:wght@400;700;900&family=Archivo+Black&family=Josefin+Sans:wght@300;400;600;700&family=Caveat:wght@400;700&family=Satisfy&family=Comfortaa:wght@300;400;700&display=swap" media="print" onload="this.media='all'">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;600;700;900&family=Dancing+Script:wght@700&family=Bebas+Neue&family=Oswald:wght@400;600;700&family=Raleway:wght@300;400;600;700&family=Cormorant+Garamond:wght@400;600;700&family=Permanent+Marker&family=Anton&family=Abril+Fatface&family=Lobster&family=Poppins:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Roboto+Slab:wght@400;700&family=Merriweather:wght@400;700&family=Pacifico&family=Sacramento&family=Great+Vibes&family=Righteous&family=Cinzel:wght@400;700;900&family=Archivo+Black&family=Josefin+Sans:wght@300;400;600;700&family=Caveat:wght@400;700&family=Satisfy&family=Comfortaa:wght@300;400;700&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -73,9 +75,14 @@
         .template-wrapper > h3 { margin-bottom: 12px; color: #ccc; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; }
         .template-card {
             border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            transition: transform 0.3s; cursor: pointer; position: relative;
+            cursor: pointer; position: relative;
+            content-visibility: auto;
+            contain-intrinsic-size: 380px 500px;
         }
-        .template-card:hover { transform: translateY(-8px); }
+        @media (hover: hover) {
+            .template-card { transition: transform 0.3s; }
+            .template-card:hover { transform: translateY(-8px); }
+        }
         .select-badge {
             position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6);
             color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem;
@@ -261,7 +268,12 @@ const templateNames = [
 ];
 
 // ===== RENDER =====
+let _renderTimer = null;
 function render() {
+    if (_renderTimer) cancelAnimationFrame(_renderTimer);
+    _renderTimer = requestAnimationFrame(_renderNow);
+}
+function _renderNow() {
     const month = document.getElementById('monthName').value;
     const priceRaw = document.getElementById('promoPrice').value || '% OFF';
     const priceColorOn = document.getElementById('priceColorOn').checked;
@@ -1348,16 +1360,19 @@ function render() {
     currentPortraitTemplates = templates.map(h => h);
     currentLandscapeTemplates = landscapeTemplates.map(h => h);
 
+    const frag = document.createDocumentFragment();
     templates.forEach((html, i) => {
-        grid.innerHTML += `
-            <div class="template-wrapper">
+        const wrapper = document.createElement('div');
+        wrapper.className = 'template-wrapper';
+        wrapper.innerHTML = `
                 <h3>${i+1} — ${templateNames[i]}</h3>
                 <div class="template-card">
                     <div class="select-badge">Click to print</div>
                     ${html}
-                </div>
-            </div>`;
+                </div>`;
+        frag.appendChild(wrapper);
     });
+    grid.appendChild(frag);
 
     // Apply global template font override if set
     if (tplFont) {
