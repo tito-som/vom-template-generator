@@ -791,9 +791,30 @@ function openPrintView(card, index) {
 
     const clone = flyer.cloneNode(true);
 
-    // Make all image src absolute
+    // Convert images to inline data URLs to prevent CORS/taint issues in the print window.
+    // Use the original flyer's loaded <img> elements (which are already decoded in memory)
+    // to draw onto a canvas and extract data URLs.
+    const imgSrcMap = {};
+    flyer.querySelectorAll('img').forEach(img => {
+        if (img.complete && img.naturalWidth > 0 && !img.src.startsWith('data:')) {
+            try {
+                const c = document.createElement('canvas');
+                c.width = img.naturalWidth;
+                c.height = img.naturalHeight;
+                c.getContext('2d').drawImage(img, 0, 0);
+                imgSrcMap[img.src] = c.toDataURL('image/png');
+                // Also map the relative path version
+                const relSrc = img.getAttribute('src');
+                if (relSrc) imgSrcMap[relSrc] = imgSrcMap[img.src];
+            } catch(e) { /* keep original src if canvas taint fails (file://) */ }
+        }
+    });
+
+    // Apply data URLs to clone
     clone.querySelectorAll('img').forEach(img => {
-        if (!img.src.startsWith('http') && !img.src.startsWith('data:')) {
+        if (imgSrcMap[img.src]) {
+            img.src = imgSrcMap[img.src];
+        } else if (!img.src.startsWith('http') && !img.src.startsWith('data:')) {
             img.src = new URL(img.getAttribute('src'), window.location.href).href;
         }
     });
@@ -805,14 +826,16 @@ function openPrintView(card, index) {
     clone.style.margin = '0';
     clone.style.flexShrink = '0';
 
-    // Prepare landscape HTML (make image paths absolute via a temp container)
+    // Prepare landscape HTML — replace image paths with data URLs (or absolute paths as fallback)
     let landscapeHTML = currentLandscapeTemplates[index] || '';
     if (landscapeHTML) {
         const tmp = document.createElement('div');
         tmp.innerHTML = landscapeHTML;
         tmp.querySelectorAll('img').forEach(img => {
             const src = img.getAttribute('src');
-            if (src && !src.startsWith('http') && !src.startsWith('data:')) {
+            if (src && imgSrcMap[src]) {
+                img.setAttribute('src', imgSrcMap[src]);
+            } else if (src && !src.startsWith('http') && !src.startsWith('data:')) {
                 img.setAttribute('src', new URL(src, window.location.href).href);
             }
         });
@@ -1224,7 +1247,7 @@ function openPrintView(card, index) {
                 html2canvas(inner || wrap, {
                     scale: captureScale,
                     useCORS: true,
-                    allowTaint: true,
+                    allowTaint: false,
                     backgroundColor: null,
                     width: capW,
                     height: capH
