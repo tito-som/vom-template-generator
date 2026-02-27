@@ -1229,7 +1229,24 @@ function openPrintView(card, index) {
                     allowTaint: false,
                     backgroundColor: null,
                     width: capW,
-                    height: capH
+                    height: capH,
+                    onclone: function(clonedDoc) {
+                        /* Ensure all images in the clone are data URLs */
+                        clonedDoc.querySelectorAll('img').forEach(function(img) {
+                            if (img.src && !img.src.startsWith('data:')) {
+                                try {
+                                    var c = document.createElement('canvas');
+                                    c.width = img.naturalWidth || img.width || 200;
+                                    c.height = img.naturalHeight || img.height || 200;
+                                    c.getContext('2d').drawImage(img, 0, 0);
+                                    img.src = c.toDataURL('image/png');
+                                } catch(e) {
+                                    /* If we can't convert, remove to prevent taint */
+                                    img.style.display = 'none';
+                                }
+                            }
+                        });
+                    }
                 }).then(function(outputCanvas) {
                     wrap.style.transform = origWrapTransform;
 
