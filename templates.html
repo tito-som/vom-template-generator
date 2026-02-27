@@ -1013,8 +1013,8 @@ function openPrintView(card, index) {
             .save-overlay { display: none !important; }
             html, body {
                 background: #fff !important;
-                width: auto !important;
-                height: auto !important;
+                width: 100% !important;
+                height: 100% !important;
                 overflow: visible !important;
                 display: block !important;
                 margin: 0 !important;
@@ -1025,21 +1025,28 @@ function openPrintView(card, index) {
                 flex: none !important;
                 display: block !important;
                 overflow: visible !important;
-                width: auto !important;
-                height: auto !important;
+                width: 100% !important;
+                height: 100% !important;
             }
             .page-frame {
                 box-shadow: none !important;
                 border-radius: 0 !important;
                 transition: none !important;
-                width: auto !important;
-                height: auto !important;
+                width: 100% !important;
+                height: 100% !important;
                 overflow: visible !important;
                 display: block !important;
             }
             .flyer-wrap {
-                transform-origin: top left !important;
+                transform: none !important;
+                width: 100% !important;
+                height: 100% !important;
                 overflow: visible !important;
+            }
+            .flyer-wrap > div {
+                width: 100% !important;
+                height: 100% !important;
+                aspect-ratio: auto !important;
             }
         }
     </style>
@@ -1176,34 +1183,18 @@ function openPrintView(card, index) {
             style.id = 'printPageStyle';
 
             if (isLandscape) {
-                style.textContent = '@page { size: 11in 8.5in; margin: 0; }';
+                style.textContent = '@page { size: landscape; margin: 0; }';
             } else {
-                style.textContent = '@page { size: ' + (IS_SOCIAL ? '1080px 1080px' : '8.5in 11in') + '; margin: 0; }';
+                style.textContent = '@page { size: ' + (IS_SOCIAL ? '1080px 1080px' : 'portrait') + '; margin: 0; }';
             }
             document.head.appendChild(style);
 
-            var wrap = document.querySelector('.flyer-wrap');
-            var origWrapTransform = wrap.style.transform;
-
-            /* Scale .flyer-wrap to fit the print page at native layout size */
-            if (isLandscape) {
-                var s = Math.min(1056 / REF_H, 816 / REF_W);
-                wrap.style.transform = 'scale(' + s + ')';
-                wrap.style.transformOrigin = 'top left';
-            } else {
-                var s = Math.min(816 / REF_W, 1056 / REF_H);
-                wrap.style.transform = 'scale(' + s + ')';
-                wrap.style.transformOrigin = 'top left';
-            }
-
+            /* No transform needed — @media print CSS stretches flyer to 100% of page */
             window.print();
 
             setTimeout(function() {
                 var ps = document.getElementById('printPageStyle');
                 if (ps) ps.remove();
-                wrap.style.transform = origWrapTransform;
-                wrap.style.transformOrigin = 'center center';
-                scaleFlyer();
             }, 500);
         }
 
