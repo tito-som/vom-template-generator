@@ -1013,8 +1013,8 @@ function openPrintView(card, index) {
             .save-overlay { display: none !important; }
             html, body {
                 background: #fff !important;
-                width: 100% !important;
-                height: 100% !important;
+                width: auto !important;
+                height: auto !important;
                 overflow: visible !important;
                 display: block !important;
                 margin: 0 !important;
@@ -1025,28 +1025,21 @@ function openPrintView(card, index) {
                 flex: none !important;
                 display: block !important;
                 overflow: visible !important;
-                width: 100% !important;
-                height: 100% !important;
+                width: auto !important;
+                height: auto !important;
             }
             .page-frame {
                 box-shadow: none !important;
                 border-radius: 0 !important;
                 transition: none !important;
-                width: 100% !important;
-                height: 100% !important;
+                width: auto !important;
+                height: auto !important;
                 overflow: visible !important;
                 display: block !important;
             }
             .flyer-wrap {
                 transform: none !important;
-                width: 100% !important;
-                height: 100% !important;
                 overflow: visible !important;
-            }
-            .flyer-wrap > div {
-                width: 100% !important;
-                height: 100% !important;
-                aspect-ratio: auto !important;
             }
         }
     </style>
@@ -1189,12 +1182,23 @@ function openPrintView(card, index) {
             }
             document.head.appendChild(style);
 
-            /* No transform needed — @media print CSS stretches flyer to 100% of page */
+            /* Use zoom (not transform) to scale flyer to print page size.
+               zoom changes actual layout size and works in Safari + Chrome print. */
+            var wrap = document.querySelector('.flyer-wrap');
+            var curW = isLandscape ? REF_H : REF_W;
+            var curH = isLandscape ? REF_W : REF_H;
+            var pageW = isLandscape ? 1056 : (IS_SOCIAL ? 1080 : 816);
+            var pageH = isLandscape ? 816 : (IS_SOCIAL ? 1080 : 1056);
+            var z = Math.min(pageW / curW, pageH / curH);
+            wrap.style.zoom = z;
+
             window.print();
 
             setTimeout(function() {
                 var ps = document.getElementById('printPageStyle');
                 if (ps) ps.remove();
+                wrap.style.zoom = '';
+                scaleFlyer();
             }, 500);
         }
 
