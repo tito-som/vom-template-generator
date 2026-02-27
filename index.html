@@ -184,6 +184,7 @@
 let customImageDataURL = '';
 let currentPortraitTemplates = [];
 let currentLandscapeTemplates = [];
+let logoDataURL = ''; // will be populated at init with base64-encoded SVG
 
 function handleImageUpload(input) {
     const file = input.files[0];
@@ -262,7 +263,7 @@ function render() {
     const grid = document.getElementById('templatesGrid');
     grid.innerHTML = '';
 
-    const logo = 'green_lady_logo.svg';
+    const logo = logoDataURL || 'green_lady_logo.svg';
     const tf = tplFont ? `font-family:${tplFont};` : '';
     const ci = customImageDataURL; // custom image data URL (empty string if none)
     const disclaimer = 'This product has intoxicating effects and may be habit forming. Marijuana can impair concentration, and judgement. Do not operate a vehicle or machinery under the influence of this drug. There may be health risks associated with consumption of this product. For use by adults 21+ and older. Keep out of reach of children.';
@@ -791,30 +792,10 @@ function openPrintView(card, index) {
 
     const clone = flyer.cloneNode(true);
 
-    // Convert images to inline data URLs to prevent CORS/taint issues in the print window.
-    // Use the original flyer's loaded <img> elements (which are already decoded in memory)
-    // to draw onto a canvas and extract data URLs.
-    const imgSrcMap = {};
-    flyer.querySelectorAll('img').forEach(img => {
-        if (img.complete && img.naturalWidth > 0 && !img.src.startsWith('data:')) {
-            try {
-                const c = document.createElement('canvas');
-                c.width = img.naturalWidth;
-                c.height = img.naturalHeight;
-                c.getContext('2d').drawImage(img, 0, 0);
-                imgSrcMap[img.src] = c.toDataURL('image/png');
-                // Also map the relative path version
-                const relSrc = img.getAttribute('src');
-                if (relSrc) imgSrcMap[relSrc] = imgSrcMap[img.src];
-            } catch(e) { /* keep original src if canvas taint fails (file://) */ }
-        }
-    });
-
-    // Apply data URLs to clone
+    // Images should already be data URLs (logo converted at init, custom image is dataURL).
+    // Make any remaining non-absolute paths absolute as fallback.
     clone.querySelectorAll('img').forEach(img => {
-        if (imgSrcMap[img.src]) {
-            img.src = imgSrcMap[img.src];
-        } else if (!img.src.startsWith('http') && !img.src.startsWith('data:')) {
+        if (!img.src.startsWith('http') && !img.src.startsWith('data:')) {
             img.src = new URL(img.getAttribute('src'), window.location.href).href;
         }
     });
@@ -826,16 +807,14 @@ function openPrintView(card, index) {
     clone.style.margin = '0';
     clone.style.flexShrink = '0';
 
-    // Prepare landscape HTML — replace image paths with data URLs (or absolute paths as fallback)
+    // Prepare landscape HTML — make any remaining relative paths absolute
     let landscapeHTML = currentLandscapeTemplates[index] || '';
     if (landscapeHTML) {
         const tmp = document.createElement('div');
         tmp.innerHTML = landscapeHTML;
         tmp.querySelectorAll('img').forEach(img => {
             const src = img.getAttribute('src');
-            if (src && imgSrcMap[src]) {
-                img.setAttribute('src', imgSrcMap[src]);
-            } else if (src && !src.startsWith('http') && !src.startsWith('data:')) {
+            if (src && !src.startsWith('http') && !src.startsWith('data:')) {
                 img.setAttribute('src', new URL(src, window.location.href).href);
             }
         });
@@ -1387,8 +1366,21 @@ function getVendors() {
 
 function updateTemplates() { render(); }
 
-// Init
-render();
+// Init — fetch logo SVG as text and convert to data URL to avoid CORS/taint issues
+(function initLogo() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'green_lady_logo.svg', true);
+    xhr.onload = function() {
+        if (xhr.status === 200 || xhr.status === 0) {
+            try {
+                logoDataURL = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xhr.responseText)));
+            } catch(e) {}
+        }
+        render();
+    };
+    xhr.onerror = function() { render(); };
+    xhr.send();
+})();
 document.querySelectorAll('.controls input, .controls select').forEach(el => {
     el.addEventListener('input', render);
     el.addEventListener('change', render);
